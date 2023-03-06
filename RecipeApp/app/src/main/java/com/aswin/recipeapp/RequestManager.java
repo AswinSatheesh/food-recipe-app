@@ -2,9 +2,11 @@ package com.aswin.recipeapp;
 
 import android.content.Context;
 
+import com.aswin.recipeapp.Listeners.InstructionsListener;
 import com.aswin.recipeapp.Listeners.RandomRecipeResponseListener;
 import com.aswin.recipeapp.Listeners.RecipeDetailsListener;
 import com.aswin.recipeapp.Listeners.SimilarRecipesListener;
+import com.aswin.recipeapp.Models.InstructionsResponse;
 import com.aswin.recipeapp.Models.RandomRecipeApiResponse;
 import com.aswin.recipeapp.Models.RecipeDetailsResponse;
 import com.aswin.recipeapp.Models.SimilarRecipeResponse;
@@ -91,7 +93,26 @@ public class RequestManager {
         });
    }
 
-    private interface CallRandomRecipes{
+    public void getInstructions(InstructionsListener listener, int id){
+        CallInstructions callInstructions = retrofit.create(CallInstructions.class);
+        Call<List<InstructionsResponse>>call = callInstructions.callInstructions(id, context.getString(R.string.api_key));
+        call.enqueue(new Callback<List<InstructionsResponse>>() {
+            @Override
+            public void onResponse(Call<List<InstructionsResponse>> call, Response<List<InstructionsResponse>> response) {
+                if(!response.isSuccessful()){
+                    listener.didError(response.message());
+                    return;
+                }
+                listener.didFetch(response.body(), response.message());
+            }
+
+            @Override
+            public void onFailure(Call<List<InstructionsResponse>> call, Throwable t) {
+                listener.didError(t.getMessage());
+            }
+        });
+    }
+    private interface CallRandomRecipes {
         @GET("recipes/random")  //in baseUrl we are using till spponacular.com/ rest of the end point need to use here receipes/random
         Call<RandomRecipeApiResponse> callRandomRecipe(
                 @Query("apiKey") String apiKey,
@@ -113,6 +134,14 @@ public class RequestManager {
         Call<List<SimilarRecipeResponse>> callSimilarRecipe(
                 @Path("id") int id,
                 @Query("number") String number,
+                @Query("apiKey") String apiKey
+        );
+    }
+
+    private interface CallInstructions{
+        @GET("recipes/{id}/analyzedInstructions")
+        Call<List<InstructionsResponse>> callInstructions(
+                @Path("id") int id,
                 @Query("apiKey") String apiKey
         );
     }
